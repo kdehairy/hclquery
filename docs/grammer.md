@@ -23,8 +23,8 @@ Literal      ::= ''' CHARACTERS '''
 ```
 
 ### Precedence
-1. `/`, `:`, `[]` and `{}`
-2. `=`
+1. `=`
+2. `/`, `:`, `[]` and `{}`
 
 ### Associativity
 - `/`, `:`, `[]` and `{}` are left-associative.

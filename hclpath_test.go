@@ -1,4 +1,4 @@
-package hclpath
+package hclquery
 
 import (
 	"strings"

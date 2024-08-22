@@ -1,4 +1,4 @@
-package hclpath
+package hclquery
 
 import (
 	"errors"
@@ -17,7 +17,11 @@ type (
 	evalFunc func(hclsyntax.Blocks) (hclsyntax.Blocks, interface{}, error)
 )
 
+// A result of compiling a query string.
 type Compilation struct {
+	// Invoking this method, and passing list of hcl Blocks, it executes the query
+	// against the given list and returning a list of blocks that statisfies the
+	// query.
 	Exec execFunc
 }
 
@@ -25,10 +29,11 @@ type evaluation struct {
 	Do evalFunc
 }
 
-var logger = logging.NewDefaultLogger(slog.LevelDebug)
+var logger = logging.NewDefaultLogger(slog.LevelInfo)
 
+// Compiles the query string and returns a Compilation.
 func Compile(path string) (*Compilation, error) {
-	logger.Info("Recieved path", "path", path)
+	logger.Debug("Recieved path", "path", path)
 	p := parse.NewParser(strings.NewReader(path))
 	expr, err := p.Parse()
 	if err != nil {
@@ -242,7 +247,7 @@ func findBlocksByLabel(blocks hclsyntax.Blocks, name string) hclsyntax.Blocks {
 }
 
 func findBlocksByType(blocks hclsyntax.Blocks, name string) hclsyntax.Blocks {
-	logger.Info("Finding Block by type...", "type", name)
+	logger.Debug("Finding Block by type...", "type", name)
 	var candidates hclsyntax.Blocks = []*hclsyntax.Block{}
 	logger.Debug("### Blocks", "count", len(blocks))
 	for _, b := range blocks {
