@@ -122,7 +122,7 @@ backend "s3" {
 ```
 
 To unmarshal the value of the `region` attribute, we would do:
-```
+```go
 // `block` is the block returned from the query
 wrapped_block := unmarshal.New(block)
 var str string
