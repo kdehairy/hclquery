@@ -95,3 +95,37 @@ terraform {
 	...
 }
 ```
+
+# Unmarshalling
+After landing on the desired block, we can unmarshal the values of any attribute inside such a bock to go native types.
+
+## Examples
+In a terraform config like this:
+```
+terraform {
+  backend "s3" {
+		...
+    region = "eu-west-2"
+		...
+  }
+	...
+}
+```
+
+Doing a query on `terraform/backend:s3{region}`, we would get the following block:
+```
+backend "s3" {
+  	...
+  region = "eu-west-2"
+  	...
+}
+```
+
+To unmarshal the value of the `region` attribute, we would do:
+```
+// `block` is the block returned from the query
+wrapped_block := unmarshal.New(block)
+var str string
+attr, err := wrapped_block.GetAttr("region")
+attr.To(&str, nil)
+```
