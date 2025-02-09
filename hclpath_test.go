@@ -3,8 +3,6 @@ package hclquery
 import (
 	"strings"
 	"testing"
-
-	"github.com/hashicorp/hcl/v2/hclparse"
 )
 
 type TestCase struct {
@@ -14,7 +12,7 @@ type TestCase struct {
 	expected int
 }
 
-func TestHclPath(t *testing.T) {
+func TestHclQuery(t *testing.T) {
 	cases := []TestCase{
 		{
 			name:     "block without label",
@@ -76,20 +74,25 @@ func TestHclPath(t *testing.T) {
 			test:     "provider:aws/assume_role{role_arn='arn:aws:iam::0987654321:role/assumable_role'}",
 			expected: 1,
 		},
+		{
+			name:     "first block of multiple",
+			fixture:  "test-1.tf",
+			test:     "provider:aws[0]",
+			expected: 1,
+		},
+		{
+			name:     "one block of multiple further filtered",
+			fixture:  "test-1.tf",
+			test:     "provider:aws[1]{alias='infra-account'}",
+			expected: 1,
+		},
 	}
 
 	for _, tc := range cases {
 		testName := strings.ReplaceAll(tc.name, " ", "_")
 		testName = strings.ToLower(testName)
 		t.Run(testName, func(t *testing.T) {
-			hclParser := hclparse.NewParser()
-			hclFile, _ := hclParser.ParseHCLFile("test_cases/test-1.tf")
-			if hclFile == nil {
-				t.Fatalf("failed to parse hcl file")
-			}
-			body := hclFile.Body
-
-			blocks, err := Query(body, tc.test)
+			blocks, err := QueryFile("test_cases/test-1.tf", tc.test)
 			if err != nil {
 				t.Fatalf("failed to find block: %v", err)
 			}

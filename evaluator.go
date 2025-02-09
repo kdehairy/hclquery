@@ -3,12 +3,10 @@ package hclquery
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/kdehairy/hclquery/cmpval"
-	"github.com/kdehairy/hclquery/logging"
 	"github.com/kdehairy/hclquery/parse"
 )
 
@@ -17,11 +15,7 @@ type (
 	evalFunc func(hclsyntax.Blocks) (hclsyntax.Blocks, interface{}, error)
 )
 
-// A result of compiling a query string.
 type Compilation struct {
-	// Invoking this method, and passing list of hcl Blocks, it executes the query
-	// against the given list and returning a list of blocks that statisfies the
-	// query.
 	Exec execFunc
 }
 
@@ -29,11 +23,8 @@ type evaluation struct {
 	Do evalFunc
 }
 
-var logger = logging.NewDefaultLogger(slog.LevelInfo)
-
-// Compiles the query string and returns a Compilation.
 func Compile(path string) (*Compilation, error) {
-	logger.Debug("Recieved path", "path", path)
+	logger.Info("Recieved path", "path", path)
 	p := parse.NewParser(strings.NewReader(path))
 	expr, err := p.Parse()
 	if err != nil {
@@ -144,8 +135,24 @@ func evaluate(expr parse.Expr) (*evaluation, interface{}, error) {
 			}
 		case parse.SelOp:
 			self.Do = func(b hclsyntax.Blocks) (hclsyntax.Blocks, interface{}, error) {
-				// TODO: find blocks
-				return nil, nil, errors.ErrUnsupported
+				blocks, _, err := lhs.Do(b)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				if rvalue == nil {
+					return nil, nil, errors.New("expected rvalue, but found none")
+				}
+				index, ok := rvalue.(int)
+				if !ok {
+					return nil, nil, fmt.Errorf("expected integer rvalue, but found '%v'", rvalue)
+				}
+
+				if len(blocks) <= index {
+					return nil, nil, fmt.Errorf("index '%v' out of bound, got a list of '%v' blocks", rvalue, len(blocks))
+				}
+
+				return blocks[index : index+1], nil, nil
 			}
 		}
 	} else {
@@ -247,7 +254,7 @@ func findBlocksByLabel(blocks hclsyntax.Blocks, name string) hclsyntax.Blocks {
 }
 
 func findBlocksByType(blocks hclsyntax.Blocks, name string) hclsyntax.Blocks {
-	logger.Debug("Finding Block by type...", "type", name)
+	logger.Info("Finding Block by type...", "type", name)
 	var candidates hclsyntax.Blocks = []*hclsyntax.Block{}
 	logger.Debug("### Blocks", "count", len(blocks))
 	for _, b := range blocks {
