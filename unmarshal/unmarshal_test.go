@@ -92,6 +92,38 @@ func TestObjType(t *testing.T) {
 				return true, nil
 			},
 		},
+		{
+			name:    "block with json function attribute",
+			fixture: "test-1.tf",
+			block:   "module/block2",
+			attr:    "jsonAttr",
+			test: func(input *hclsyntax.Block, name string) (bool, error) {
+				block := New(input)
+				var obj []struct {
+					Name  string `cty:"name"`
+					Image string `cty:"image"`
+				}
+				attr, err := block.GetAttr(name)
+				if err != nil {
+					return false, err
+				}
+				err = attr.To(&obj, &hcl.EvalContext{
+					Functions: map[string]function.Function{
+						"jsondecode": stdlib.JSONDecodeFunc,
+					},
+				})
+				if err != nil {
+					t.Fatalf("failed to parse into provided obj: %v", err)
+				}
+				if obj[0].Name != "datetime" {
+					return false, nil
+				}
+				if obj[0].Image != "datetime-image-path" {
+					return false, nil
+				}
+				return true, nil
+			},
+		},
 	}
 
 	for _, tc := range cases {
