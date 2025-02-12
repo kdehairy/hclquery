@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/kdehairy/hclquery"
+	"github.com/kdehairy/hclquery/unmarshal/json"
 	"github.com/zclconf/go-cty/cty/function"
 	"github.com/zclconf/go-cty/cty/function/stdlib"
 )
@@ -64,7 +65,7 @@ func TestObjType(t *testing.T) {
 			},
 		},
 		{
-			name:    "block with json function attribute",
+			name:    "attribute with json object",
 			fixture: "test-1.tf",
 			block:   "module/block1",
 			attr:    "jsonAttr",
@@ -80,7 +81,7 @@ func TestObjType(t *testing.T) {
 				}
 				attr.To(&obj, &hcl.EvalContext{
 					Functions: map[string]function.Function{
-						"jsondecode": stdlib.JSONDecodeFunc,
+						"jsondecode": json.JSONDecodeFunc,
 					},
 				})
 				if obj.Name != "datetime" {
@@ -93,7 +94,7 @@ func TestObjType(t *testing.T) {
 			},
 		},
 		{
-			name:    "block with json function attribute",
+			name:    "attribute with json array",
 			fixture: "test-1.tf",
 			block:   "module/block2",
 			attr:    "jsonAttr",
@@ -109,7 +110,7 @@ func TestObjType(t *testing.T) {
 				}
 				err = attr.To(&obj, &hcl.EvalContext{
 					Functions: map[string]function.Function{
-						"jsondecode": stdlib.JSONDecodeFunc,
+						"jsondecode": json.JSONDecodeFunc,
 					},
 				})
 				if err != nil {
@@ -119,6 +120,45 @@ func TestObjType(t *testing.T) {
 					return false, nil
 				}
 				if obj[0].Image != "datetime-image-path" {
+					return false, nil
+				}
+				return true, nil
+			},
+		},
+		{
+			name:    "attribute with nested json array",
+			fixture: "test-1.tf",
+			block:   "module/block3",
+			attr:    "jsonAttr",
+			test: func(input *hclsyntax.Block, name string) (bool, error) {
+				block := New(input)
+				var obj struct {
+					Name  string `cty:"name"`
+					Image string `cty:"image"`
+					Env   []struct {
+						Name  string `cty:"name"`
+						Value string `cty:"value"`
+					} `cty:"env"`
+				}
+				attr, err := block.GetAttr(name)
+				if err != nil {
+					return false, err
+				}
+				err = attr.To(&obj, &hcl.EvalContext{
+					Functions: map[string]function.Function{
+						"jsondecode": json.JSONDecodeFunc,
+					},
+				})
+				if err != nil {
+					t.Fatalf("failed to parse into provided obj: %v", err)
+				}
+				if obj.Name != "datetime" {
+					return false, nil
+				}
+				if obj.Image != "datetime-image-path" {
+					return false, nil
+				}
+				if len(obj.Env) != 1 {
 					return false, nil
 				}
 				return true, nil

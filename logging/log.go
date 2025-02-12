@@ -6,6 +6,30 @@ import (
 	"os"
 )
 
+type Logger struct {
+	logger *slog.Logger
+}
+
+func (l *Logger) Info(msg string, args ...any) {
+	l.logger.Info(msg, args...)
+}
+
+func (l *Logger) Error(msg string, args ...any) {
+	l.logger.Error(msg, args...)
+}
+
+func (l *Logger) Warn(msg string, args ...any) {
+	l.logger.Warn(msg, args...)
+}
+
+func (l *Logger) Debug(msg string, args ...any) {
+	l.logger.Debug(msg, args...)
+}
+
+func (l *Logger) Trace(msg string, args ...any) {
+	l.logger.Log(context.Background(), LevelTrace, msg, args...)
+}
+
 type LevelHandler struct {
 	level   slog.Leveler
 	handler slog.Handler
@@ -23,6 +47,16 @@ func (h *LevelHandler) Enabled(_ context.Context, level slog.Level) bool {
 }
 
 func (h *LevelHandler) Handle(ctx context.Context, r slog.Record) error {
+	r.Attrs(func(a slog.Attr) bool {
+		if a.Key == slog.LevelKey {
+			level := a.Value.Any().(slog.Level)
+			if level < slog.LevelDebug {
+				a.Value = slog.StringValue("TRACE")
+			}
+			return false
+		}
+		return true
+	})
 	return h.handler.Handle(ctx, r)
 }
 
@@ -38,8 +72,12 @@ func (h *LevelHandler) Handler() slog.Handler {
 	return h.handler
 }
 
+const LevelTrace = slog.Level(-8)
+
 func strToLevel(val string) slog.Level {
 	switch val {
+	case "trace":
+		return LevelTrace
 	case "debug":
 		return slog.LevelDebug
 	case "warn":
@@ -52,12 +90,12 @@ func strToLevel(val string) slog.Level {
 	return slog.LevelWarn
 }
 
-func NewDefaultLogger() *slog.Logger {
-	level := slog.LevelWarn
+func NewDefaultLogger() *Logger {
+	level := LevelTrace
 	if val, ok := os.LookupEnv("GO_LOG_LEVEL"); ok {
 		level = strToLevel(val)
 	}
-	return NewLogger(level)
+	return &Logger{NewLogger(level)}
 }
 
 func NewLogger(level slog.Leveler) *slog.Logger {

@@ -30,7 +30,7 @@ func Compile(path string) (*Compilation, error) {
 	if err != nil {
 		return nil, fmt.Errorf("syntax error: %v", err)
 	}
-	logger.Debug("AST", "expr", expr.Print())
+	logger.Trace("AST", "expr", expr.Print())
 
 	eval, _, err := evaluate(expr)
 	if err != nil {
@@ -39,19 +39,19 @@ func Compile(path string) (*Compilation, error) {
 
 	Compilation := &Compilation{
 		Exec: func(b hclsyntax.Blocks) (blocks hclsyntax.Blocks, err error) {
-			logger.Debug("Executing Compilation...")
+			logger.Trace("Executing Compilation...")
 			blocks, _, err = eval.Do(b)
 			return
 		},
 	}
 
-	logger.Debug("Compilation Complete", "Compilation", Compilation)
+	logger.Trace("Compilation Complete", "Compilation", Compilation)
 
 	return Compilation, nil
 }
 
 func evaluate(expr parse.Expr) (*evaluation, interface{}, error) {
-	logger.Debug(">> Evaluating Expr:", "AST", expr.Print(), "type", expr.GetType())
+	logger.Trace(">> Evaluating Expr:", "AST", expr.Print(), "type", expr.GetType())
 	var lhs *evaluation
 	var rhs *evaluation
 	var lvalue interface{}
@@ -59,7 +59,7 @@ func evaluate(expr parse.Expr) (*evaluation, interface{}, error) {
 	var value interface{}
 	var self *evaluation
 	var err error
-	logger.Debug(">> Start evaluating sides")
+	logger.Trace(">> Start evaluating sides")
 	if expr.GetLeft() != nil {
 		lhs, lvalue, err = evaluate(expr.GetLeft())
 		if err != nil {
@@ -73,11 +73,11 @@ func evaluate(expr parse.Expr) (*evaluation, interface{}, error) {
 			return nil, nil, err
 		}
 	}
-	logger.Debug(">> End evaluating sides")
+	logger.Trace(">> End evaluating sides")
 
 	self = &evaluation{}
 	if expr.GetOp() != nil {
-		logger.Debug("Expr operator", "Op", *expr.GetOp())
+		logger.Trace("Expr operator", "Op", *expr.GetOp())
 		switch *expr.GetOp() {
 		case parse.NstOp:
 			self.Do = func(b hclsyntax.Blocks) (blocks hclsyntax.Blocks, value interface{}, err error) {
@@ -156,12 +156,12 @@ func evaluate(expr parse.Expr) (*evaluation, interface{}, error) {
 			}
 		}
 	} else {
-		logger.Debug("No operator")
+		logger.Trace("No operator")
 		switch expr.GetType() {
 		case parse.Type:
 			value = expr.GetVal()
 			self.Do = func(b hclsyntax.Blocks) (hclsyntax.Blocks, interface{}, error) {
-				logger.Debug("Evaluating 'type' Node", "expr", expr.Print())
+				logger.Trace("Evaluating 'type' Node", "expr", expr.Print())
 				val := expr.GetVal()
 				if val == nil {
 					return nil, nil, errors.New("expected block type, but found none")
@@ -176,7 +176,7 @@ func evaluate(expr parse.Expr) (*evaluation, interface{}, error) {
 		case parse.Label:
 			value = expr.GetVal()
 			self.Do = func(b hclsyntax.Blocks) (hclsyntax.Blocks, interface{}, error) {
-				logger.Debug("Evaluating 'label' Node", "expr", expr.Print())
+				logger.Trace("Evaluating 'label' Node", "expr", expr.Print())
 				val := expr.GetVal()
 				if val == nil {
 					return nil, nil, errors.New("expected block label, but found none")
@@ -191,7 +191,7 @@ func evaluate(expr parse.Expr) (*evaluation, interface{}, error) {
 		case parse.Attr:
 			value = expr.GetVal()
 			self.Do = func(b hclsyntax.Blocks) (hclsyntax.Blocks, interface{}, error) {
-				logger.Debug("Evaluating 'attr' Node", "expr", expr.Print())
+				logger.Trace("Evaluating 'attr' Node", "expr", expr.Print())
 				val := expr.GetVal()
 				if val == nil {
 					return nil, nil, errors.New("expected block label, but found none")
@@ -206,13 +206,13 @@ func evaluate(expr parse.Expr) (*evaluation, interface{}, error) {
 		case parse.Num, parse.Str:
 			value = expr.GetVal()
 			self.Do = func(b hclsyntax.Blocks) (hclsyntax.Blocks, interface{}, error) {
-				logger.Debug("Evaluating 'literal' Node", "expr", expr.Print())
+				logger.Trace("Evaluating 'literal' Node", "expr", expr.Print())
 				return nil, expr.GetVal(), nil
 			}
 		}
 	}
 
-	logger.Debug("Finished Evaluation", "expr", expr.Print())
+	logger.Trace("Finished Evaluation", "expr", expr.Print())
 	return self, value, nil
 }
 
@@ -237,14 +237,14 @@ func findBlocksByAttr(blocks hclsyntax.Blocks, name string) (hclsyntax.Blocks, e
 }
 
 func findBlocksByLabel(blocks hclsyntax.Blocks, name string) hclsyntax.Blocks {
-	logger.Debug("### findBlocksByLabel")
+	logger.Trace("### findBlocksByLabel")
 	var candidates hclsyntax.Blocks = []*hclsyntax.Block{}
-	logger.Debug("### Blocks", "count", len(blocks))
+	logger.Trace("### Blocks", "count", len(blocks))
 	for _, b := range blocks {
-		logger.Debug("### Labels", "block", b.Type, "count", len(b.Labels))
+		logger.Trace("### Labels", "block", b.Type, "count", len(b.Labels))
 		for _, l := range b.Labels {
 			if l == name {
-				logger.Debug("Found block with label", "block", b.Type, "label", l)
+				logger.Trace("Found block with label", "block", b.Type, "label", l)
 				candidates = append(candidates, b)
 				break
 			}
@@ -256,11 +256,11 @@ func findBlocksByLabel(blocks hclsyntax.Blocks, name string) hclsyntax.Blocks {
 func findBlocksByType(blocks hclsyntax.Blocks, name string) hclsyntax.Blocks {
 	logger.Info("Finding Block by type...", "type", name)
 	var candidates hclsyntax.Blocks = []*hclsyntax.Block{}
-	logger.Debug("### Blocks", "count", len(blocks))
+	logger.Trace("### Blocks", "count", len(blocks))
 	for _, b := range blocks {
-		logger.Debug("Examining block", "block", b.Type)
+		logger.Trace("Examining block", "block", b.Type)
 		if b.Type == name {
-			logger.Debug("Found block", "block", b.Type, "label", b.Type)
+			logger.Trace("Found block", "block", b.Type, "label", b.Type)
 			candidates = append(candidates, b)
 		}
 	}
