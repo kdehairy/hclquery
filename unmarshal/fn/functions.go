@@ -1,12 +1,13 @@
-package json
+package fn
 
 import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/kdehairy/hclquery/unmarshal/json"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
-	"github.com/zclconf/go-cty/cty/json"
+	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
 var JSONDecodeFunc = function.New(&function.Spec{
@@ -60,10 +61,10 @@ var JSONDecodeFunc = function.New(&function.Spec{
 		}
 
 		buf := []byte(str.AsString())
-		return ImpliedType(buf)
+		return json.ImpliedType(buf)
 	},
 	Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
 		buf := []byte(args[0].AsString())
-		return json.Unmarshal(buf, retType)
+		return ctyjson.Unmarshal(buf, retType)
 	},
 })

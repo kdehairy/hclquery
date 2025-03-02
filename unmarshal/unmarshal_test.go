@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/kdehairy/hclquery"
-	"github.com/kdehairy/hclquery/unmarshal/json"
+	"github.com/kdehairy/hclquery/unmarshal/fn"
 	"github.com/zclconf/go-cty/cty/function"
 	"github.com/zclconf/go-cty/cty/function/stdlib"
 )
@@ -81,7 +81,7 @@ func TestObjType(t *testing.T) {
 				}
 				attr.To(&obj, &hcl.EvalContext{
 					Functions: map[string]function.Function{
-						"jsondecode": json.JSONDecodeFunc,
+						"jsondecode": fn.JSONDecodeFunc,
 					},
 				})
 				if obj.Name != "datetime" {
@@ -110,7 +110,7 @@ func TestObjType(t *testing.T) {
 				}
 				err = attr.To(&obj, &hcl.EvalContext{
 					Functions: map[string]function.Function{
-						"jsondecode": json.JSONDecodeFunc,
+						"jsondecode": fn.JSONDecodeFunc,
 					},
 				})
 				if err != nil {
@@ -146,7 +146,7 @@ func TestObjType(t *testing.T) {
 				}
 				err = attr.To(&obj, &hcl.EvalContext{
 					Functions: map[string]function.Function{
-						"jsondecode": json.JSONDecodeFunc,
+						"jsondecode": fn.JSONDecodeFunc,
 					},
 				})
 				if err != nil {

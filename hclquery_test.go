@@ -86,6 +86,18 @@ func TestHclQuery(t *testing.T) {
 			test:     "provider:aws[1]{alias='infra-account'}",
 			expected: 1,
 		},
+		{
+			name:     "block with multiple labels",
+			fixture:  "test-2.tf",
+			test:     "resource:aws_vpc_endpoint",
+			expected: 1,
+		},
+		{
+			name:     "block with multiple labels",
+			fixture:  "test-1.tf",
+			test:     "resource:this",
+			expected: 1,
+		},
 	}
 
 	for _, tc := range cases {
